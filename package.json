@@ -1,8 +1,30 @@
 {
   "name": "@andrewconnell/senja-mcp",
   "description": "MCP server for the Senja testimonial API",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andrewconnell/senja-mcp"
+  },
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "senja",
+    "testimonials"
+  ],
+  "homepage": "https://github.com/Voitanos/heft-plugins",
+  "issues": "https://github.com/Voitanos/heft-plugins/issues",
+  "author": "Andrew Connell <me@andrewconnell.com>",
+  "maintainers": [
+    {
+      "name": "andrewconnell",
+      "email": "me@andrewconnell.com"
+    }
+  ],
   "type": "module",
+  "files": [
+    "lib"
+  ],
   "bin": {
     "senja-mcp": "./lib/index.js"
   },
@@ -16,15 +38,6 @@
     "inspect:next": "SENJA_API_KEY=op://Private/Senja/api-key op run -- npx @modelcontextprotocol/inspector npx @andrewconnell/senja-mcp@next -e SENJA_API_KEY=$SENJA_API_KEY",
     "start": "node lib/index.js"
   },
-  "files": [
-    "lib"
-  ],
-  "keywords": [
-    "mcp",
-    "senja",
-    "testimonials"
-  ],
-  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.27.1",
     "zod": "3.25.67"
