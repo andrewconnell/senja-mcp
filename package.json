@@ -1,7 +1,7 @@
 {
   "name": "@andrewconnell/senja-mcp",
   "description": "MCP server for the Senja testimonial API",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/andrewconnell/senja-mcp"
@@ -12,8 +12,8 @@
     "senja",
     "testimonials"
   ],
-  "homepage": "https://github.com/Voitanos/heft-plugins",
-  "issues": "https://github.com/Voitanos/heft-plugins/issues",
+  "homepage": "https://github.com/andrewconnell/senja-mcp",
+  "issues": "https://github.com/andrewconnell/senja-mcp/issues",
   "author": "Andrew Connell <me@andrewconnell.com>",
   "maintainers": [
     {
