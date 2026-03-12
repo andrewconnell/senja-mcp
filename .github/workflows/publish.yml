@@ -1,0 +1,163 @@
+name: Publish NPM Package
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  VERSION_NODE: '22'
+
+permissions:
+  contents: write
+  # used for npmjs.org trusted publishers
+  #   - https://docs.npmjs.com/trusted-publishers
+  #   - https://docs.github.com/en/actions/concepts/security/openid-connect
+  id-token: write
+
+jobs:
+  ######################################################################
+  # ensure build completes without errors & tests pass
+  ######################################################################
+  validate:
+    name: Validate Build
+    runs-on: ubuntu-latest
+    steps:
+      ######################################################################
+      # checkout codebase
+      ######################################################################
+      - name: Checkout repo codebase
+        uses: actions/checkout@v4
+
+      ######################################################################
+      # configure to use Node.js version
+      ######################################################################
+      - name: 🔧  Setup Node v${{ env.VERSION_NODE }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.VERSION_NODE }}
+
+      ######################################################################
+      # install dependencies
+      ######################################################################
+      - name: ⬇️  Install dependencies
+        run: npm ci
+
+      ######################################################################
+      # build package
+      ######################################################################
+      - name: 🙏  Build package
+        run: npm run build
+
+      ######################################################################
+      # run tests
+      ######################################################################
+      - name: 🧪  Run tests
+        run: npm test
+
+  ######################################################################
+  # publish package to npmjs.org
+  ######################################################################
+  publish:
+    name: Publish to npmjs.org
+    needs: [validate]
+    runs-on: ubuntu-latest
+    steps:
+      ######################################################################
+      # checkout codebase
+      ######################################################################
+      - name: Checkout repo codebase
+        uses: actions/checkout@v4
+
+      ######################################################################
+      # configure to use Node.js version
+      ######################################################################
+      - name: 🔧  Setup Node v${{ env.VERSION_NODE }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.VERSION_NODE }}
+          registry-url: 'https://registry.npmjs.org'
+
+      ######################################################################
+      # update npm to v11.5.1+ (required for npmjs.org trusted publishing)
+      ######################################################################
+      - name: ⚙️  Update npm (v11.5.1+)
+        run: npm install -g npm@latest
+
+      ######################################################################
+      # install dependencies
+      ######################################################################
+      - name: ⬇️  Install dependencies
+        run: npm ci
+
+      ######################################################################
+      # build package
+      ######################################################################
+      - name: 🙏  Build package
+        run: npm run build
+
+      ######################################################################
+      # extract version and determine dist-tag
+      ######################################################################
+      - name: 🪏  Extract version and determine dist-tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Determine NPM dist-tag based on version format
+          if [[ $VERSION =~ -beta\. ]]; then
+            echo "dist_tag=next" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          elif [[ $VERSION =~ -rc\. ]]; then
+            echo "dist_tag=next" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          elif [[ $VERSION =~ -alpha\. ]]; then
+            echo "dist_tag=next" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "dist_tag=latest" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      ######################################################################
+      # get package name from package.json
+      ######################################################################
+      - name: 🪏  Get package name from package.json
+        id: package
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          echo "name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Full package name: $PACKAGE_NAME"
+
+      ######################################################################
+      # configure npm for OIDC authentication
+      #   > https://docs.npmjs.com/trusted-publishers
+      ######################################################################
+      - name: 🔧  Configure npm for OIDC authentication
+        run: |
+          npm config delete //registry.npmjs.org/:_authToken 2>/dev/null || true
+          npm config delete always-auth 2>/dev/null || true
+          npm config delete //registry.npmjs.org/:always-auth 2>/dev/null || true
+
+      ######################################################################
+      # publish package to npmjs.org
+      ######################################################################
+      - name: 🚀  Publish package to NPM with provenance
+        run: npm publish --access public --tag ${{ steps.version.outputs.dist_tag }} --provenance
+
+      ######################################################################
+      # create GitHub release
+      ######################################################################
+      - name: 📦  Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ steps.package.outputs.name }}@${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          prerelease: ${{ steps.version.outputs.prerelease }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
